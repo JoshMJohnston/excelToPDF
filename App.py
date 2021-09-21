@@ -12,6 +12,8 @@ from reportlab.platypus.flowables import PageBreak
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate
 from reportlab.platypus import Paragraph
+import lxml.html
+from xml.sax.saxutils import escape
 
 QUESTIONS_PER_PAGE = 3
 
@@ -42,15 +44,17 @@ class App:
                 curCellData = self.ws.cell(column=curCol, row=1).value
 
     def getQuestions(self, col):
+        questionNum = 1
         curRow = 2
         curCellData = self.ws.cell(column=col, row=curRow).value
         while (curCellData != None):
-            lowercase = curCellData.lower()
+            stripped = lxml.html.fromstring(curCellData).text_content()
+            lowercase = stripped.lower()
             if lowercase not in self.invalidQuestions:
-                curCellData = curCellData.replace('<br>', '')
-                curCellData = curCellData.replace('</>', '')
-                if (curCellData != None):
-                    self.questions.append(curCellData)
+                if (len(stripped) > 0):
+                    final = f"{questionNum}. {stripped}"
+                    self.questions.append(final)
+                    questionNum += 1
             curRow += 1
             curCellData = self.ws.cell(column=col, row=curRow).value
 
@@ -60,16 +64,25 @@ class App:
         count = 0
         for question in self.questions:
             count += 1
-            p = Paragraph(question)
-            elements.append(p)
+            p = Paragraph(escape(question))
+            try:
+                if p.text != '':
+                    elements.append(p)
+            except:
+                print("Error adding a question.")
+
             if (count < QUESTIONS_PER_PAGE):
                 n = Paragraph("<br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/>")
                 elements.append(n)
             if (count % QUESTIONS_PER_PAGE == 0):
                 elements.append(PageBreak())
                 count = 0
-            
-        doc.build(elements)
+        try:
+            doc.build(elements)
+        except:
+            print("Error building PDF.")
+            sys.exit()
+
 
     def run(self):
         colNum = self.getQuestionColumnNumber()
