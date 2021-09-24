@@ -10,12 +10,14 @@ import openpyxl
 from openpyxl.worksheet import worksheet
 from reportlab.platypus.flowables import PageBreak
 from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.platypus import SimpleDocTemplate
 from reportlab.platypus import Paragraph
 import lxml.html
 from xml.sax.saxutils import escape
 
-QUESTIONS_PER_PAGE = 3
+style = getSampleStyleSheet()
+paragraphStyle = ParagraphStyle('Questions', fontSize=12, spaceAfter=70, leading=17)
 
 class App:
     def __init__(self, inputFile, outputFile, worksheetNum):
@@ -36,9 +38,13 @@ class App:
     def getQuestionColumnNumber(self):
         curCol = 1
         curCellData = self.ws.cell(column=curCol, row=1).value
-        while (curCellData != None):
+        while (True):
             if curCellData == "Answer 11":
                 return curCol
+            elif (curCol > 100):
+                print("Error: Unable to find column with title \"Answer 11\"\n")
+                input("Press enter to exit...")
+                sys.exit()
             else:
                 curCol += 1
                 curCellData = self.ws.cell(column=curCol, row=1).value
@@ -61,22 +67,13 @@ class App:
     def generatePDF(self):
         doc = SimpleDocTemplate(self.outputFile, pagesize=letter)
         elements = []
-        count = 0
         for question in self.questions:
-            count += 1
-            p = Paragraph(escape(question))
+            p = Paragraph(escape(question), paragraphStyle)
             try:
                 if p.text != '':
                     elements.append(p)
             except:
                 print("Error adding a question.")
-
-            if (count < QUESTIONS_PER_PAGE):
-                n = Paragraph("<br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/>")
-                elements.append(n)
-            if (count % QUESTIONS_PER_PAGE == 0):
-                elements.append(PageBreak())
-                count = 0
         try:
             doc.build(elements)
         except:
