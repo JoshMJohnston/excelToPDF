@@ -17,7 +17,7 @@ import lxml.html
 from xml.sax.saxutils import escape
 
 style = getSampleStyleSheet()
-paragraphStyle = ParagraphStyle('Questions', fontSize=12, spaceAfter=70, leading=17)
+paragraphStyle = ParagraphStyle('Questions', fontSize=18, spaceAfter=40, leading=20)
 
 class App:
     def __init__(self, inputFile, outputFile, worksheetNum):
